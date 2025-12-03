@@ -233,7 +233,7 @@ def run_simulation(
             for leg in ["FL", "FR", "RL", "RR"]:
                 tau_min, tau_max = tau_limits[leg][:, 0], tau_limits[leg][:, 1]
                 tau[leg] = np.clip(tau[leg], tau_min, tau_max)
-
+            
             # Set control and mujoco step -------------------------------------------------------------------------
             action = np.zeros(env.mjModel.nu)
             action[env.legs_tau_idx.FL] = tau.FL
@@ -318,7 +318,7 @@ def run_simulation(
                     state_obs_history.append(ep_state_history)
                     ctrl_state_history.append(ep_ctrl_state_history)     
 
-                env.reset(random=True)
+                env.reset(random=False)
                 quadrupedpympc_wrapper.reset(initial_feet_pos=env.feet_pos(frame="world"))
 
         if h5py_writer is not None:  # Save episode trajectory data to disk.
