@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import CubicSpline
 
-from quadruped_pympc import config as cfg
+from quadruped_pympc.config import cfg
 
 class SwingTrajectoryGenerator:
     def __init__(self, step_height: float, swing_period: float) -> None:
@@ -11,16 +11,18 @@ class SwingTrajectoryGenerator:
         self.half_swing_period = swing_period / 2
         self.bezier_time_factor = 1 / (swing_period / 2)
 
+        self.config = cfg.get_config()
+
         # Stored swing-trajectory properties
         self.stepHeight = step_height
         self.reflex_next_steps_height_enhancement = False
 
-        if(cfg.simulation_params['visual_foothold_adaptation'] == 'blind'):
+        if(self.config["simulation_params"]['visual_foothold_adaptation'] == 'blind'):
             self.blind_locomotion = True
         else:
             self.blind_locomotion = False
 
-        self.reflex_max_step_height = cfg.simulation_params['reflex_max_step_height']
+        self.reflex_max_step_height = self.config["simulation_params"]['reflex_max_step_height']
 
     def createCurve(self, x0, xf, early_stance_hitmoment = -1):
 

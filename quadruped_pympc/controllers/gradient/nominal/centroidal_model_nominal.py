@@ -9,7 +9,7 @@ import casadi as cs
 import numpy as np
 from acados_template import AcadosModel
 
-import quadruped_pympc.config as config
+from quadruped_pympc.config import cfg
 
 
 # Class that defines the prediction model of the NMPC
@@ -19,6 +19,7 @@ class Centroidal_Model_Nominal:
         This method initializes the foothold generator Centroidal_Model, which creates
         the prediction model of the NMPC.
         """
+        self.config = cfg.get_config()
 
         # Define state and its casadi variables
         com_position_x = cs.SX.sym("com_position_x")
@@ -135,7 +136,7 @@ class Centroidal_Model_Nominal:
         self.inertia = cs.SX.sym("inertia", 9, 1)
         self.mass = cs.SX.sym("mass", 1, 1)
 
-        self.gravity_constant = config.gravity_constant
+        self.gravity_constant = self.config["gravity_constant"]
 
         # Not so useful, i can instantiate a casadi function for the fd
         param = cs.vertcat(
@@ -275,7 +276,7 @@ class Centroidal_Model_Nominal:
         # angular_acc_base = -cs.inv(self.inertia)@cs.skew(w)@self.inertia@w + cs.inv(self.inertia)@b_R_w@temp2 + external_wrench_angular
 
         # FINAL linear_foot_vel STATES (5,6,7,8)
-        if not config.mpc_params["use_foothold_optimization"]:
+        if not self.config["mpc_params"]["use_foothold_optimization"]:
             foot_velocity_fl = foot_velocity_fl @ 0.0
             foot_velocity_fr = foot_velocity_fr @ 0.0
             foot_velocity_rl = foot_velocity_rl @ 0.0
@@ -337,3 +338,4 @@ class Centroidal_Model_Nominal:
         acados_model.name = "centroidal_model"
 
         return acados_model
+

@@ -24,12 +24,9 @@ import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 gym_quadruped_path = os.path.dirname(gym_quadruped.__file__)
 
-
-from quadruped_pympc import config as cfg
-
 from gym_quadruped.quadruped_env import QuadrupedEnv
 
-from quadruped_pympc import config as cfg
+from quadruped_pympc.config import cfg
 
 IT_MAX = 5
 DT = 1e-2
@@ -47,7 +44,7 @@ class InverseKinematicsNumeric:
 
         """
 
-        robot_name = cfg.robot
+        robot_name = cfg.robot_name
 
         # Create the quadruped robot environment ---------------------
         self.env = QuadrupedEnv(

@@ -1,7 +1,7 @@
 import numpy as np
 from gym_quadruped.utils.quadruped_utils import LegsAttr
 
-from quadruped_pympc import config as cfg
+from quadruped_pympc.config import cfg
 
 class EarlyStanceDetector:
     def __init__(self, feet_geom_id : LegsAttr = None,
@@ -12,12 +12,12 @@ class EarlyStanceDetector:
         self.early_stance = LegsAttr(FL=False, FR=False, RR=False, RL=False )
         self.hitmoments = LegsAttr(FL=-1.0, FR=-1.0, RR=-1.0, RL=-1.0) # swing time of the last contact moment
         self.hitpoints = LegsAttr(FL=None, FR=None, RR=None, RL=None)
+        self.config = cfg.get_config()
 
-
-        if(cfg.mpc_params['type'] == 'sampling'):
+        if(self.config["mpc_params"]['type'] == 'sampling'):
             self.activated = False # TO FIX
 
-        self.trigger_mode = cfg.simulation_params['reflex_trigger_mode']
+        self.trigger_mode = self.config["simulation_params"]['reflex_trigger_mode']
         if(self.trigger_mode == False):
             self.activated = False
         else:
@@ -29,7 +29,7 @@ class EarlyStanceDetector:
         self.absolute_min_distance_error_threshold = 0.1
 
         self.gait_cycles_after_reflex_height_enanchement = -1
-        self.use_reflex_next_steps_height_enhancement = cfg.simulation_params['reflex_next_steps_height_enhancement']
+        self.use_reflex_next_steps_height_enhancement = self.config["simulation_params"]['reflex_next_steps_height_enhancement']
         self.max_gait_cycles_height_enhancement = 6
 
 

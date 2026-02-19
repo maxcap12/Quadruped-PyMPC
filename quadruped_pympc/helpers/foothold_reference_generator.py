@@ -7,7 +7,7 @@ from gym_quadruped.utils.quadruped_utils import LegsAttr
 from scipy.spatial.transform import Rotation
 
 from quadruped_pympc.helpers.quadruped_utils import GaitType
-from quadruped_pympc import config as cfg
+from quadruped_pympc.config import cfg
 
 # Class for the generation of the reference footholds
 # TODO: @Giulio Should we convert this to a single function instead of a class? Stance time, can be passed as argument
@@ -22,6 +22,7 @@ class FootholdReferenceGenerator:
         ----
             stance_time: The user-defined time of the stance phase.
         """
+        self.config = cfg.get_config()
         self.base_vel_hist = collections.deque(maxlen=vel_moving_average_length)
         self.stance_time = stance_time
         self.hip_height = hip_height
@@ -48,7 +49,7 @@ class FootholdReferenceGenerator:
             FL=np.array([0, 0, 0]), FR=np.array([0, 0, 0]), RL=np.array([0, 0, 0]), RR=np.array([0, 0, 0])
         )
 
-        self.gravity_constant = cfg.gravity_constant
+        self.gravity_constant = self.config["gravity_constant"]
 
     def compute_footholds_reference(
         self,

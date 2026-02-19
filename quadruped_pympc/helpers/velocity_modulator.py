@@ -1,16 +1,16 @@
 import numpy as np
 
-from quadruped_pympc import config as cfg
+from quadruped_pympc.config import cfg
 
 
 class VelocityModulator:
     def __init__(self):
-        
-        self.activated = cfg.simulation_params['velocity_modulator']
+        self.config = cfg.get_config()
+        self.activated = self.config["simulation_params"]['velocity_modulator']
 
-        if cfg.robot == "aliengo":
+        if cfg.robot_name == "aliengo":
             self.max_distance = 0.2
-        elif cfg.robot == "go1" or cfg.robot == "go2":
+        elif cfg.robot_name == "go1" or cfg.robot_name == "go2":
             self.max_distance = 0.2
         else:
             self.max_distance = 0.2

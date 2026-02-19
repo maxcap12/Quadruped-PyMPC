@@ -1,7 +1,7 @@
 import numpy as np
 from gym_quadruped.utils.quadruped_utils import LegsAttr
 
-from quadruped_pympc import config as cfg
+from quadruped_pympc.config import cfg
 from quadruped_pympc.interfaces.srbd_batched_controller_interface import SRBDBatchedControllerInterface
 from quadruped_pympc.interfaces.srbd_controller_interface import SRBDControllerInterface
 from quadruped_pympc.interfaces.wb_interface import WBInterface
@@ -26,12 +26,13 @@ class QuadrupedPyMPC_Wrapper:
             legs_order (tuple[str, str, str, str], optional): order of the leg. Defaults to ('FL', 'FR', 'RL', 'RR').
             quadrupedpympc_observables_names (tuple[str, ...], optional): list of observable to save. Defaults to _DEFAULT_OBS.
         """
+        self.config = cfg.get_config()
 
-        self.mpc_frequency = cfg.simulation_params["mpc_frequency"]
+        self.mpc_frequency = self.config["simulation_params"]["mpc_frequency"]
 
         self.srbd_controller_interface = SRBDControllerInterface()
 
-        if cfg.mpc_params['type'] != 'sampling' and cfg.mpc_params['optimize_step_freq']:
+        if self.config["mpc_params"]['type'] != 'sampling' and self.config["mpc_params"]['optimize_step_freq']:
             self.srbd_batched_controller_interface = SRBDBatchedControllerInterface()
 
         self.wb_interface = WBInterface(initial_feet_pos=initial_feet_pos(frame='world'), legs_order=legs_order, feet_geom_id =  feet_geom_id)
@@ -150,13 +151,13 @@ class QuadrupedPyMPC_Wrapper:
                 optimize_swing,
             )
 
-            if cfg.mpc_params['type'] != 'sampling' and cfg.mpc_params['use_RTI']:
+            if self.config["mpc_params"]['type'] != 'sampling' and self.config["mpc_params"]['use_RTI']:
                 # If the controller is gradient and is using RTI, we need to linearize the mpc after its computation
                 # this helps to minize the delay between new state->control in a real case scenario.
                 self.srbd_controller_interface.compute_RTI()
 
         # Update the gait
-        if cfg.mpc_params['type'] != 'sampling' and cfg.mpc_params['optimize_step_freq']:
+        if self.config["mpc_params"]['type'] != 'sampling' and self.config["mpc_params"]['optimize_step_freq']:
             self.best_sample_freq = self.srbd_batched_controller_interface.optimize_gait(
                 state_current,
                 ref_state,
@@ -196,8 +197,8 @@ class QuadrupedPyMPC_Wrapper:
 
         # Do some PD control over the joints (these values are normally passed
         # to a low-level motor controller, here we can try to simulate it)
-        kp_joint_motor = cfg.simulation_params['impedence_joint_position_gain']
-        kd_joint_motor = cfg.simulation_params['impedence_joint_velocity_gain']
+        kp_joint_motor = self.config["simulation_params"]['impedence_joint_position_gain']
+        kd_joint_motor = self.config["simulation_params"]['impedence_joint_velocity_gain']
         # for leg in legs_order:
         #    tau[leg] += kp_joint_motor * (des_joints_pos[leg] - qpos[legs_qpos_idx[leg]]) + \
         #                kd_joint_motor * (des_joints_vel[leg] - qvel[legs_qvel_idx[leg]])

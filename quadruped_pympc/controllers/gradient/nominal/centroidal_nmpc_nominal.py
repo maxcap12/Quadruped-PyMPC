@@ -12,7 +12,7 @@ import casadi as cs
 import numpy as np
 import scipy.linalg
 
-import quadruped_pympc.config as config
+from quadruped_pympc.config import cfg
 
 from .centroidal_model_nominal import Centroidal_Model_Nominal
 
@@ -20,21 +20,22 @@ from .centroidal_model_nominal import Centroidal_Model_Nominal
 # Class for the Acados NMPC, the model is in another file!
 class Acados_NMPC_Nominal:
     def __init__(self):
-        self.horizon = config.mpc_params['horizon']  # Define the number of discretization steps
-        self.dt = config.mpc_params['dt']
+        self.config = cfg.get_config()
+        self.horizon = self.config["mpc_params"]['horizon']  # Define the number of discretization steps
+        self.dt = self.config["mpc_params"]['dt']
         self.T_horizon = self.horizon * self.dt
-        self.use_RTI = config.mpc_params["use_RTI"]
-        self.use_integrators = config.mpc_params["use_integrators"]
-        self.use_warm_start = config.mpc_params["use_warm_start"]
-        self.use_foothold_constraints = config.mpc_params["use_foothold_constraints"]
+        self.use_RTI = self.config["mpc_params"]["use_RTI"]
+        self.use_integrators = self.config["mpc_params"]["use_integrators"]
+        self.use_warm_start = self.config["mpc_params"]["use_warm_start"]
+        self.use_foothold_constraints = self.config["mpc_params"]["use_foothold_constraints"]
 
-        self.use_static_stability = config.mpc_params["use_static_stability"]
-        self.use_zmp_stability = config.mpc_params["use_zmp_stability"]
+        self.use_static_stability = self.config["mpc_params"]["use_static_stability"]
+        self.use_zmp_stability = self.config["mpc_params"]["use_zmp_stability"]
         self.use_stability_constraints = self.use_static_stability or self.use_zmp_stability
 
-        self.use_DDP = config.mpc_params["use_DDP"]
+        self.use_DDP = self.config["mpc_params"]["use_DDP"]
 
-        self.verbose = config.mpc_params["verbose"]
+        self.verbose = self.config["mpc_params"]["verbose"]
 
         self.previous_status = -1
         self.previous_contact_sequence = np.zeros((4, self.horizon))
@@ -182,8 +183,8 @@ class Acados_NMPC_Nominal:
         init_base_position = np.array([0, 0, 0])
         init_base_yaw = np.array([0])
         init_external_wrench = np.array([0, 0, 0, 0, 0, 0])
-        init_inertia = config.inertia.reshape((9,))
-        init_mass = np.array([config.mass])
+        init_inertia = self.config["inertia"].reshape((9,))
+        init_mass = np.array([self.config["mass"]])
 
         ocp.parameter_values = np.concatenate(
             (
@@ -205,7 +206,7 @@ class Acados_NMPC_Nominal:
         ocp.solver_options.integrator_type = "ERK"  # ERK IRK GNSF DISCRETE
         if self.use_DDP:
             ocp.solver_options.nlp_solver_type = 'DDP'
-            ocp.solver_options.nlp_solver_max_iter = config.mpc_params['num_qp_iterations']
+            ocp.solver_options.nlp_solver_max_iter = self.config["mpc_params"]['num_qp_iterations']
             # ocp.solver_options.globalization = 'MERIT_BACKTRACKING'
             ocp.solver_options.with_adaptive_levenberg_marquardt = True
 
@@ -221,32 +222,32 @@ class Acados_NMPC_Nominal:
             ocp.solver_options.nlp_solver_max_iter = 1
             # Set the RTI type for the advanced RTI method
             # (see https://arxiv.org/pdf/2403.07101.pdf)
-            if config.mpc_params['as_rti_type'] == "AS-RTI-A":
+            if self.config["mpc_params"]['as_rti_type'] == "AS-RTI-A":
                 ocp.solver_options.as_rti_iter = 1
                 ocp.solver_options.as_rti_level = 0
-            elif config.mpc_params['as_rti_type'] == "AS-RTI-B":
+            elif self.config["mpc_params"]['as_rti_type'] == "AS-RTI-B":
                 ocp.solver_options.as_rti_iter = 1
                 ocp.solver_options.as_rti_level = 1
-            elif config.mpc_params['as_rti_type'] == "AS-RTI-C":
+            elif self.config["mpc_params"]['as_rti_type'] == "AS-RTI-C":
                 ocp.solver_options.as_rti_iter = 1
                 ocp.solver_options.as_rti_level = 2
-            elif config.mpc_params['as_rti_type'] == "AS-RTI-D":
+            elif self.config["mpc_params"]['as_rti_type'] == "AS-RTI-D":
                 ocp.solver_options.as_rti_iter = 1
                 ocp.solver_options.as_rti_level = 3
 
         else:
             ocp.solver_options.nlp_solver_type = "SQP"
-            ocp.solver_options.nlp_solver_max_iter = config.mpc_params["num_qp_iterations"]
+            ocp.solver_options.nlp_solver_max_iter = self.config["mpc_params"]["num_qp_iterations"]
         # ocp.solver_options.globalization = "MERIT_BACKTRACKING"  # FIXED_STEP, MERIT_BACKTRACKING
 
-        if config.mpc_params['solver_mode'] == "balance":
+        if self.config["mpc_params"]['solver_mode'] == "balance":
             ocp.solver_options.hpipm_mode = "BALANCE"
-        elif config.mpc_params['solver_mode'] == "robust":
+        elif self.config["mpc_params"]['solver_mode'] == "robust":
             ocp.solver_options.hpipm_mode = "ROBUST"
-        elif config.mpc_params['solver_mode'] == "fast":
+        elif self.config["mpc_params"]['solver_mode'] == "fast":
             ocp.solver_options.qp_solver_iter_max = 10
             ocp.solver_options.hpipm_mode = "SPEED"
-        elif config.mpc_params['solver_mode'] == "crazy_speed":
+        elif self.config["mpc_params"]['solver_mode'] == "crazy_speed":
             ocp.solver_options.qp_solver_iter_max = 5
             ocp.solver_options.hpipm_mode = "SPEED_ABS"
 
@@ -259,12 +260,12 @@ class Acados_NMPC_Nominal:
         ocp.solver_options.tf = self.T_horizon
 
         # Nonuniform discretization
-        if config.mpc_params['use_nonuniform_discretization']:
+        if self.config["mpc_params"]['use_nonuniform_discretization']:
             time_steps_fine_grained = np.tile(
-                config.mpc_params['dt_fine_grained'], config.mpc_params['horizon_fine_grained']
+                self.config["mpc_params"]['dt_fine_grained'], self.config["mpc_params"]['horizon_fine_grained']
             )
             time_steps = np.concatenate(
-                (time_steps_fine_grained, np.tile(self.dt, self.horizon - config.mpc_params['horizon_fine_grained']))
+                (time_steps_fine_grained, np.tile(self.dt, self.horizon - self.config["mpc_params"]['horizon_fine_grained']))
             )
             shooting_nodes = np.zeros((self.horizon + 1,))
             for i in range(len(time_steps)):
@@ -440,8 +441,8 @@ class Acados_NMPC_Nominal:
         t = np.array([1, 0, 0])
         b = np.array([0, 1, 0])
         mu = self.centroidal_model.mu_friction
-        f_max = config.mpc_params["grf_max"]
-        f_min = config.mpc_params["grf_min"]
+        f_max = self.config["mpc_params"]["grf_max"]
+        f_min = self.config["mpc_params"]["grf_min"]
 
         # Derivation can be found in the paper
         # "High-slope terrain locomotion for torque-controlled quadruped robots",
@@ -514,7 +515,7 @@ class Acados_NMPC_Nominal:
         Q_pitch_integral_integral = np.array([10])  # integral of pitch
 
         R_foot_vel = np.array([0.0001, 0.0001, 0.00001])  # v_x, v_y, v_z (should be 4 times this, once per foot)
-        if config.robot == "hyqreal":
+        if cfg.robot_name == "hyqreal":
             R_foot_force = np.array(
                 [0.00001, 0.00001, 0.00001]
             )  # f_x, f_y, f_z (should be 4 times this, once per foot)
@@ -911,7 +912,7 @@ class Acados_NMPC_Nominal:
                         FR_contact_sequence, RL_contact_sequence
                     ):
                         # TROT
-                        stability_margin = config.mpc_params['trot_stability_margin']
+                        stability_margin = self.config["mpc_params"]['trot_stability_margin']
                         if FL_contact_sequence[j] == 1 and FR_contact_sequence[j] == 0:
                             ub_support_FL_RR = 0 + stability_margin
                             lb_support_FL_RR = 0 - stability_margin
@@ -924,7 +925,7 @@ class Acados_NMPC_Nominal:
                         FR_contact_sequence, RR_contact_sequence
                     ):
                         # PACE
-                        stability_margin = config.mpc_params['pace_stability_margin']
+                        stability_margin = self.config["mpc_params"]['pace_stability_margin']
                         if FL_contact_sequence[j] == 1 and FR_contact_sequence[j] == 0:
                             ub_support_RL_FL = 0 + stability_margin
                             lb_support_RL_FL = 0 - stability_margin
@@ -935,7 +936,7 @@ class Acados_NMPC_Nominal:
 
                     else:
                         # CRAWL BACKDIAGONALCRAWL ONLY
-                        stability_margin = config.mpc_params["crawl_stability_margin"]
+                        stability_margin = self.config["mpc_params"]["crawl_stability_margin"]
 
                         if FL_contact_sequence[j] == 1:
                             if FR_contact_sequence[j] == 1:
@@ -1142,9 +1143,13 @@ class Acados_NMPC_Nominal:
         contact_sequence,
         constraint=None,
         external_wrenches=np.zeros((6,)),
-        inertia=config.inertia.reshape((9,)),
-        mass=config.mass,
+        inertia=None,
+        mass=None
     ):
+        if inertia is None:
+            inertia = self.config["inertia"]
+        if mass is None:
+            mass = self.config["mass"]
         # Take the array of the contact sequence and split it in 4 arrays,
         # one for each leg
         FL_contact_sequence = contact_sequence[0]
@@ -1236,7 +1241,7 @@ class Acados_NMPC_Nominal:
 
         # Fill stance param, friction and stance proximity
         # (stance proximity will disable foothold optimization near a stance!!)
-        mu = config.mpc_params["mu"]
+        mu = self.config["mpc_params"]["mu"]
         yaw = state["orientation"][2]
 
         # Stance Proximity ugly routine. Basically we disable foothold optimization
@@ -1285,9 +1290,9 @@ class Acados_NMPC_Nominal:
             # If we have estimated an external wrench, we can compensate it for all steps
             # or less (maybe the disturbance is not costant along the horizon!)
             if (
-                config.mpc_params['external_wrenches_compensation']
-                and config.mpc_params['external_wrenches_compensation_num_step']
-                and j < config.mpc_params['external_wrenches_compensation_num_step']
+                self.config["mpc_params"]['external_wrenches_compensation']
+                and self.config["mpc_params"]['external_wrenches_compensation_num_step']
+                and j < self.config["mpc_params"]['external_wrenches_compensation_num_step']
             ):
                 external_wrenches_estimated_param = copy.deepcopy(external_wrenches)
                 external_wrenches_estimated_param = external_wrenches_estimated_param.reshape((6,))
@@ -1347,7 +1352,7 @@ class Acados_NMPC_Nominal:
 
         if self.use_integrators:
             # Compute error for integral action
-            alpha_integrator = config.mpc_params["alpha_integrator"]
+            alpha_integrator = self.config["mpc_params"]["alpha_integrator"]
             self.integral_errors[0] += (state["position"][2] - reference["ref_position"][2]) * alpha_integrator
             self.integral_errors[1] += (
                 state["linear_velocity"][0] - reference["ref_linear_velocity"][0]
@@ -1361,12 +1366,12 @@ class Acados_NMPC_Nominal:
             self.integral_errors[4] += (state["orientation"][0] - reference["ref_orientation"][0]) * (alpha_integrator)
             self.integral_errors[5] += (state["orientation"][1] - reference["ref_orientation"][1]) * alpha_integrator
 
-            cap_integrator_z = config.mpc_params["integrator_cap"][0]
-            cap_integrator_x_dot = config.mpc_params["integrator_cap"][1]
-            cap_integrator_y_dot = config.mpc_params["integrator_cap"][2]
-            cap_integrator_z_dot = config.mpc_params["integrator_cap"][3]
-            cap_integrator_roll = config.mpc_params["integrator_cap"][4]
-            cap_integrator_pitch = config.mpc_params["integrator_cap"][5]
+            cap_integrator_z = self.config["mpc_params"]["integrator_cap"][0]
+            cap_integrator_x_dot = self.config["mpc_params"]["integrator_cap"][1]
+            cap_integrator_y_dot = self.config["mpc_params"]["integrator_cap"][2]
+            cap_integrator_z_dot = self.config["mpc_params"]["integrator_cap"][3]
+            cap_integrator_roll = self.config["mpc_params"]["integrator_cap"][4]
+            cap_integrator_pitch = self.config["mpc_params"]["integrator_cap"][5]
 
             self.integral_errors[0] = np.where(
                 np.abs(self.integral_errors[0]) > cap_integrator_z,
@@ -1637,8 +1642,8 @@ class Acados_NMPC_Nominal:
         if optimal_footholds_assigned[3] == False:
             optimal_foothold[3] = reference["ref_foot_RR"][0]
 
-        if config.mpc_params['dt'] <= 0.02 or (
-            config.mpc_params['use_nonuniform_discretization'] and config.mpc_params['dt_fine_grained'] <= 0.02
+        if self.config["mpc_params"]['dt'] <= 0.02 or (
+            self.config["mpc_params"]['use_nonuniform_discretization'] and self.config["mpc_params"]['dt_fine_grained'] <= 0.02
         ):
             optimal_next_state_index = 2
         else:
@@ -1703,3 +1708,4 @@ class Acados_NMPC_Nominal:
 
         # Return the optimal GRF, the optimal foothold, the next state and the status of the optimization
         return optimal_GRF, optimal_foothold, optimal_next_state, status
+
