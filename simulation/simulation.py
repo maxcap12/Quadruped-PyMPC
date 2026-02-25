@@ -318,7 +318,7 @@ def run_simulation(
                     state_obs_history.append(ep_state_history)
                     ctrl_state_history.append(ep_ctrl_state_history)     
 
-                env.reset(random=True)
+                env.reset(random=False)
                 quadrupedpympc_wrapper.reset(initial_feet_pos=env.feet_pos(frame="world"))
 
         if h5py_writer is not None:  # Save episode trajectory data to disk.
