@@ -38,7 +38,7 @@ class Simulation(Node):
             base_vel_command_type="human",
             state_obs_names=tuple([])
         )
-        self.thread = Thread(target=self.simulation_loop, kwargs={'qpympc_cfg': conf, 'render': True, 'env': self.env})
+        self.thread = Thread(target=self.simulation_loop, kwargs={'qpympc_cfg': conf, 'render': False, 'env': self.env})
         print("ready")
         self.thread.start()
 
